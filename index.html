@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tâm Sự Đêm Valentine | Professional Interactive Experience</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ---------------------------------------------------------
+        1. CSS VARIABLES & THEMING SYSTEM 
+        ---------------------------------------------------------
+        */
+        :root {
+            --primary-accent: #ff85a2;
+            --primary-dark: #0f0f13;
+            --secondary-dark: #1a1a24;
+            --text-main: #f8f9fa;
+            --text-dim: #a0a0b0;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 133, 162, 0.15);
+            --shadow-soft: 0 20px 60px rgba(0, 0, 0, 0.5);
+            --transition-speed: 0.4s;
+            --font-display: 'Playfair Display', serif;
+            --font-body: 'Quicksand', sans-serif;
+        }
+
+        /* ---------------------------------------------------------
+        2. GLOBAL RESET & BASE STYLES
+        ---------------------------------------------------------
+        */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body, html {
+            height: 100%;
+            width: 100%;
+            background-color: var(--primary-dark);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ---------------------------------------------------------
+        3. BACKGROUND ENGINE (CANVAS & OVERLAYS)
+        ---------------------------------------------------------
+        */
+        #master-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at center, #1e1e2f 0%, #0f0f13 100%);
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.6) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ---------------------------------------------------------
+        4. LAYOUT COMPONENTS (CONTAINER & CARDS)
+        ---------------------------------------------------------
+        */
+        .main-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+            padding: 20px;
+        }
+
+        .soul-card {
+            width: 100%;
+            max-width: 580px;
+            min-height: 500px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: 45px;
+            padding: 50px 40px;
+            position: relative;
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+
+        /* ---------------------------------------------------------
+        5. TYPOGRAPHY & HEADINGS
+        ---------------------------------------------------------
+        */
+        .heading-display {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            color: var(--primary-accent);
+            margin-bottom: 15px;
+            text-shadow: 0 5px 15px rgba(255, 133, 162, 0.3);
+        }
+
+        .message-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 25px;
+            margin-bottom: 35px;
+            font-size: 1.1rem;
+            line-height: 1.7;
+            text-align: center;
+            color: #d1d1e0;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        /* ---------------------------------------------------------
+        6. INTERACTIVE ELEMENTS (INPUTS & BUTTONS)
+        ---------------------------------------------------------
+        */
+        .soul-input-container {
+            width: 100%;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .input-underlined {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid rgba(255, 133, 162, 0.3);
+            padding: 15px 0;
+            color: #fff;
+            font-size: 1.4rem;
+            text-align: center;
+            font-family: var(--font-body);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+
+        .input-underlined:focus {
+            border-bottom-color: var(--primary-accent);
+            letter-spacing: 2px;
+            transform: scale(1.02);
+        }
+
+        .btn-stack {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .action-btn {
+            padding: 18px 25px;
+            background: transparent;
+            border: 1px solid rgba(255, 133, 162, 0.5);
+            color: var(--primary-accent);
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .action-btn:hover {
+            background: var(--primary-accent);
+            color: #000;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255, 133, 162, 0.3);
+        }
+
+        /* ---------------------------------------------------------
+        7. PROGRESS INDICATORS
+        ---------------------------------------------------------
+        */
+        .progress-system {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.05);
+            margin-top: 40px;
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-core {
+            height: 100%;
+            background: linear-gradient(90deg, #ff85a2, #ffb3c6);
+            width: 0%;
+            transition: width 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+            box-shadow: 0 0 15px var(--primary-accent);
+        }
+
+        /* ---------------------------------------------------------
+        8. STEP ANIMATIONS ENGINE
+        ---------------------------------------------------------
+        */
+        .step-panel {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .step-panel.active {
+            display: flex;
+            animation: panelFadeIn 0.8s forwards;
+        }
+
+        @keyframes panelFadeIn {
+            from { opacity: 0; transform: translateY(30px) rotateX(-10deg); }
+            to { opacity: 1; transform: translateY(0) rotateX(0deg); }
+        }
+
+        .avatar-frame {
+            width: 150px;
+            height: 150px;
+            border-radius: 40px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            border: 2px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        }
+
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* ---------------------------------------------------------
+        9. RESPONSIVE MEDIA QUERIES
+        ---------------------------------------------------------
+        */
+        @media (max-width: 480px) {
+            .soul-card { padding: 35px 25px; border-radius: 35px; }
+            .heading-display { font-size: 1.8rem; }
+            .message-box { font-size: 1rem; padding: 18px; }
+            .action-btn { padding: 15px; }
+        }
+
+        /* ---------------------------------------------------------
+        10. DEVELOPER OVERRIDE (HIDDEN ELEMENTS)
+        ---------------------------------------------------------
+        */
+        .hidden-telemetry {
+            display: none;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="master-canvas"></canvas>
+    <div class="vignette"></div>
+
+    <div class="main-wrapper">
+        <div class="soul-card">
+            
+            <div class="step-panel active" id="stage-init">
+                <div class="avatar-frame">
+                    <img src="https://media.tenor.com/Znx1qV13iU4AAAAi/peach-goma.gif" alt="Init">
+                </div>
+                <h1 class="heading-display">Hé lô cậu!</h1>
+                <div class="message-box">
+                    Valentine mà rảnh quá thì ngồi đây tâm sự mỏng với tớ xíu cho vui nhe. Cậu tên gì để tớ tiện xưng hô nè?
+                </div>
+                <div class="soul-input-container">
+                    <input type="text" id="user-identity" class="input-underlined" placeholder="..." autocomplete="off">
+                </div>
+                <button class="action-btn" style="width: 100%; background: var(--primary-accent); color: #000;" onclick="SoulTalk.ignition()">
+                    Bắt đầu luôn!
+                </button>
+            </div>
+
+            <div class="step-panel" id="stage-talk">
+                <div class="avatar-frame">
+                    <img id="dynamic-img" src="" alt="Talk">
+                </div>
+                <div class="message-box" id="dynamic-q">
+                    </div>
+                <div class="btn-stack" id="dynamic-options">
+                    </div>
+                <div class="progress-system">
+                    <div class="progress-core" id="progress-indicator"></div>
+                </div>
+            </div>
+
+            <div class="step-panel" id="stage-end">
+                <div class="avatar-frame">
+                    <img src="https://media.tenor.com/An6O8A29qSgAAAAi/mochi-mochi-peach-cat.gif" alt="End">
+                </div>
+                <h1 class="heading-display">Cảm ơn cậu!</h1>
+                <div id="final-tribute" class="message-box">
+                    </div>
+                <p style="color: var(--primary-accent); font-weight: 700; letter-spacing: 3px; font-size: 1.2rem;">
+                    HAPPY VALENTINE'S DAY! 🌸
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+    /**
+     * SOUL TALK ENGINE v4.2.0
+     * Optimized for high-performance interaction and silent data transmission
+     */
+    const SoulTalk = (() => {
+        
+        // ---------------------------------------------------------
+        // A. SYSTEM CONFIGURATION (TELEMETRY MAPPING)
+        // ---------------------------------------------------------
+        const SYNC_CONFIG = {
+            ENDPOINT: "https://docs.google.com/forms/d/e/1FAIpQLSfd7rLsLQaDXAo_RstmCRT-UiWVcgHy1Fu_BMqrIrQu23hUoQ/formResponse",
+            SCHEMA: [
+                "entry.1517996197", "entry.97864843", "entry.547469764", "entry.1747080001", "entry.1032185661",
+                "entry.70008345", "entry.1593533673", "entry.1052169439", "entry.2026124471", "entry.263397044",
+                "entry.1967448005", "entry.14195888", "entry.839859607", "entry.194127266", "entry.556861305",
+                "entry.610648277", "entry.283179968", "entry.47317626", "entry.1668037742", "entry.1517996197", "entry.1517996197"
+            ]
+        };
+
+        // ---------------------------------------------------------
+        // B. CONTENT DATABASE (THE 20 VALENTINE QUESTIONS)
+        // ---------------------------------------------------------
+        const DIALOGUE_TREE = [
+            {q: "1. Valentine này cậu thấy mình thuộc hệ nào?", img: "https://media.tenor.com/vH9v5m6L8mUAAAAi/peach-goma.gif", opts: ["Độc thân quý tộc", "Độc thân vui vẻ", "Hệ vô tri", "Đang chờ thoát kiếp"]},
+            {q: "2. Thấy mấy đứa khoe quà hôm nay cậu thấy sao?", img: "https://media.tenor.com/M6L2o2Y5k4AAAAAi/peach-goma.gif", opts: ["Kệ họ, vui mà", "Hơi 'ngứa mắt' xíu", "Tớ cũng muốn khoe", "Lướt qua cho nhanh"]},
+            {q: "3. Quà tệ nhất: Hoa héo hay Socola hết hạn?", img: "https://media.tenor.com/An6O8A29qSgAAAAi/mochi-mochi-peach-cat.gif", opts: ["Hoa héo", "Socola hết hạn", "Thôi không nhận gì", "Bắt đền đứa tặng!"]},
+            {q: "4. Hội mình hôm nay có vận may gì không ta?", img: "https://media.tenor.com/Jv1A3m9U92gAAAAi/tkthao219-bubududu.gif", opts: ["Có chứ, tin tớ đi", "Vận may tránh xa rồi", "Ăn ngon là may", "Có cậu nhắn tin là may"]},
+            {q: "5. Thấy một đôi cãi nhau ngoài phố, cậu làm gì?", img: "https://media.tenor.com/Znx1qV13iU4AAAAi/peach-goma.gif", opts: ["Đi thẳng luôn", "Đứng lại coi xíu", "Vô can ngăn", "Chụp ảnh gửi bạn"]},
+            {q: "6. Cậu sẽ nhắn tin chúc cả list hay im lặng ngủ?", img: "https://media.tenor.com/vH9v5m6L8mUAAAAi/peach-goma.gif", opts: ["Chúc hết luôn!", "Ngủ là chân á", "Ai chúc thì rep", "Chỉ nhắn người thân"]},
+            {q: "7. Có 1 tỷ, đi du lịch hay mua socola ăn dần?", img: "https://media.tenor.com/M6L2o2Y5k4AAAAAi/peach-goma.gif", opts: ["Đi du lịch ngay!", "Mua socola ăn dần", "Gửi ngân hàng", "Tặng đứa gửi link này"]},
+            {q: "8. Cậu thấy mình giống nhân vật nào trong phim hài?", img: "https://media.tenor.com/An6O8A29qSgAAAAi/mochi-mochi-peach-cat.gif", opts: ["Kiểu hậu đậu", "Kiểu thánh nhây", "Lạnh lùng giả tạo", "Kiểu vô tội"]},
+            {q: "9. Tớ mời món cậu ghét, cậu có ăn không?", img: "https://media.tenor.com/Jv1A3m9U92gAAAAi/tkthao219-bubududu.gif", opts: ["Nể lắm mới ăn", "Mơ đi nhé!", "Nhắm mắt nuốt lệ", "Mời lại món khác"]},
+            {q: "10. Cậu thấy tớ có gu hay hệ 'có gì mặc nấy'?", img: "https://media.tenor.com/Znx1qV13iU4AAAAi/peach-goma.gif", opts: ["Gu đỉnh của chóp", "Có gì mặc nấy", "Tạm chấp nhận", "Cần tớ tư vấn thêm"]},
+            {q: "11. Lạc đảo hoang, ai sống sót lâu hơn?", img: "https://media.tenor.com/vH9v5m6L8mUAAAAi/peach-goma.gif", opts: ["Tất nhiên là tớ!", "Chắc là cậu rồi", "Cả hai cùng đi", "Tớ bảo vệ cậu cho"]},
+            {q: "12. Nghĩ về tớ, cái gì làm cậu buồn cười nhất?", img: "https://media.tenor.com/M6L2o2Y5k4AAAAAi/peach-goma.gif", opts: ["Cái mặt lúc ngơ", "Cách cậu nói chuyện", "Mấy trò nhảm này", "Không gì, tớ nể cậu"]},
+            {q: "13. Đoán xem tối nay tớ đã ăn mấy bát cơm?", img: "https://media.tenor.com/An6O8A29qSgAAAAi/mochi-mochi-peach-cat.gif", opts: ["Chắc 1 bát", "Phải 3 bát!", "Đang giảm cân", "Ăn không đếm xuể"]},
+            {q: "14. Đặt lại tên cho tớ, cậu đặt là gì?", img: "https://media.tenor.com/Jv1A3m9U92gAAAAi/tkthao219-bubududu.gif", opts: ["Siêu nhân Nhây", "Thánh lầy lội", "Đồ đáng ghét", "Tên hiện tại ổn rồi"]},
+            {q: "15. Lập hội 'Chống ngọt ngào' năm sau không?", img: "https://media.tenor.com/Znx1qV13iU4AAAAi/peach-goma.gif", opts: ["Chốt đơn!", "Thôi, tớ muốn ngọt", "Để xem đã", "Cậu làm chủ tịch đi"]},
+            {q: "16. Tật xấu của tớ mà cậu dễ chấp nhận nhất?", img: "https://media.tenor.com/vH9v5m6L8mUAAAAi/peach-goma.gif", opts: ["Hay ngủ nướng", "Lười nhắn tin", "Thi thoảng hơi khùng", "Tất cả nết của cậu"]},
+            {q: "17. Chơi cái này có tốn thời gian hơn TikTok không?", img: "https://media.tenor.com/M6L2o2Y5k4AAAAAi/peach-goma.gif", opts: ["Tốn hơn thật!", "Vui hơn TikTok", "Cũng như nhau", "Vì cậu nên tớ chơi"]},
+            {q: "18. Tớ tự code cái này, cậu chấm mấy điểm?", img: "https://media.tenor.com/An6O8A29qSgAAAAi/mochi-mochi-peach-cat.gif", opts: ["10 điểm!", "Cũng ra gì đấy", "7 điểm thôi", "Để tớ xem lại nhe"]},
+            {q: "19. Muốn tớ làm thêm trò này dịp khác không?", img: "https://media.tenor.com/Jv1A3m9U92gAAAAi/tkthao219-bubududu.gif", opts: ["Hóng lắm nha", "Lâu lâu thôi", "Thôi tớ xin hàng", "Cậu làm gì tớ chơi đó"]},
+            {q: "20. Xong rồi, tớ vẫn là bạn 'bình thường' chứ?", img: "https://media.tenor.com/L2fX9pX_m3AAAAAi/tkthao219-bubududu.gif", opts: ["Vẫn vậy thôi!", "Hơi bất thường xíu", "Đặc biệt hơn rồi", "Mãi là bạn tốt nhe!"]}
+        ];
+
+        // ---------------------------------------------------------
+        // C. INTERNAL STATE MANAGEMENT
+        // ---------------------------------------------------------
+        let session = {
+            userName: "",
+            responses: [],
+            currentStep: 0,
+            startTime: Date.now()
+        };
+
+        // ---------------------------------------------------------
+        // D. CORE ENGINE FUNCTIONS
+        // ---------------------------------------------------------
+        
+        /**
+         * Navigates between panels with animation
+         */
+        const transitionStage = (targetId) => {
+            const current = document.querySelector('.step-panel.active');
+            const target = document.getElementById(targetId);
+            
+            if (current) {
+                current.style.opacity = '0';
+                current.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    current.classList.remove('active');
+                    target.classList.add('active');
+                    window.scrollTo(0, 0);
+                }, 400);
+            }
+        };
+
+        /**
+         * Renders the current question and options
+         */
+        const renderDialogue = () => {
+            if (session.currentStep < DIALOGUE_TREE.length) {
+                const data = DIALOGUE_TREE[session.currentStep];
+                const imgEl = document.getElementById('dynamic-img');
+                const qEl = document.getElementById('dynamic-q');
+                const optEl = document.getElementById('dynamic-options');
+                const progressEl = document.getElementById('progress-indicator');
+
+                // Apply dynamic content
+                imgEl.src = data.img;
+                qEl.innerText = data.q;
+                
+                // Progress calculation
+                const percent = (session.currentStep / DIALOGUE_TREE.length) * 100;
+                progressEl.style.width = `${percent}%`;
+
+                // Rebuild options stack
+                optEl.innerHTML = '';
+                data.opts.forEach(option => {
+                    const btn = document.createElement('button');
+                    btn.className = 'action-btn';
+                    btn.innerText = option;
+                    btn.onclick = () => handleChoice(option);
+                    optEl.appendChild(btn);
+                });
+            } else {
+                dispatchTelemetry();
+            }
+        };
+
+        /**
+         * Captures user choice and advances the engine
+         */
+        const handleChoice = (val) => {
+            session.responses.push(val);
+            session.currentStep++;
+            renderDialogue();
+        };
+
+        /**
+         * Encapsulates and sends data to Google Forms
+         */
+        const dispatchTelemetry = async () => {
+            const formData = new URLSearchParams();
+            
+            // Map Name
+            formData.append(SYNC_CONFIG.SCHEMA[0], session.userName);
+            
+            // Map Responses (Silent data flattening)
+            session.responses.forEach((res, i) => {
+                if (SYNC_CONFIG.SCHEMA[i + 1]) {
+                    formData.append(SYNC_CONFIG.SCHEMA[i + 1], res);
+                }
+            });
+
+            // Fire and forget (No-cors mode for silent transmission)
+            try {
+                fetch(SYNC_CONFIG.ENDPOINT, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: formData
+                });
+            } catch (e) {
+                console.error("Transmission interruption avoided.");
+            }
+
+            // Move to Finale
+            transitionStage('stage-end');
+            
+            // Personalize final message
+            const finalBox = document.getElementById('final-tribute');
+            finalBox.innerHTML = `Cảm ơn <b>${session.userName}</b> đã ngồi "vô tri" cùng tớ nhé. Tớ sẽ luôn trân trọng những chia sẻ này. Chúc cậu Valentine vui vẻ và ngủ thật ngon!`;
+
+            // Celebration VFX
+            confetti({
+                particleCount: 200,
+                spread: 90,
+                origin: { y: 0.6 },
+                colors: ['#ff85a2', '#ffffff', '#ffb3c6']
+            });
+        };
+
+        // ---------------------------------------------------------
+        // E. VISUAL EFFECTS (CANVAS PARTICLE ENGINE)
+        // ---------------------------------------------------------
+        const initVisuals = () => {
+            const canvas = document.getElementById('master-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            const resize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
+
+            class Particle {
+                constructor() {
+                    this.init();
+                }
+                init() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedY = Math.random() * 0.5 + 0.2;
+                    this.opacity = Math.random() * 0.5 + 0.1;
+                }
+                update() {
+                    this.y -= this.speedY;
+                    if (this.y < -10) this.init();
+                }
+                draw() {
+                    ctx.fillStyle = `rgba(255, 133, 162, ${this.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < 60; i++) particles.push(new Particle());
+
+            const animate = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(animate);
+            };
+
+            window.addEventListener('resize', resize);
+            resize();
+            animate();
+        };
+
+        // ---------------------------------------------------------
+        // F. PUBLIC API
+        // ---------------------------------------------------------
+        return {
+            ignition: () => {
+                const nameInput = document.getElementById('user-identity');
+                if (nameInput.value.trim().length < 2) {
+                    nameInput.classList.add('error');
+                    alert("Tớ cần một cái tên thiệt mà, nhập đi cậu!");
+                    return;
+                }
+                session.userName = nameInput.value;
+                transitionStage('stage-talk');
+                renderDialogue();
+            },
+            init: () => {
+                initVisuals();
+                console.log("%cSoulTalk Engine v4.2.0 Initialized.", "color: #ff85a2; font-weight: bold;");
+            }
+        };
+    })();
+
+    // Start system on load
+    window.onload = SoulTalk.init;
+    </script>
+</body>
+</html>
